@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuisine Hunt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+NZ:wght@100..400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+NG+Modern:wght@100..400&family=Playwrite+NZ:wght@100..400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="../static/styles.css">
+</head>
+<body>
+    <div class="whole">
+        <div id="map"></div>
+        <div class="container">
+            <form method="GET" action="{% url 'search' %}" id="searchForm">
+                <div id="nav">
+                    <input type="text" name="q" placeholder="Search for dishes..." value="{{ query }}">
+                    <button type="submit" id="imageButton">
+                        <img src="{% static 'search_app/search_svg.svg' %}" alt="Search">
+                    </button>
+                </div>
+                <br>
+                <label class="custom-checkbox">
+                    <input type="checkbox" name="veg_only" onchange="submitForm()" {% if veg_only %}checked{% endif %}>
+                    <span class="checkmark"></span>
+                    <span style="color: #4CAF50; margin-right:2.5px;font-size: 20px;">Veg</span><img src="{% static 'search_app/veg.webp' %}" alt="Veg Only">
+                </label>
+            </form>
+            {% if page_obj.object_list %}
+            <ul>
+                {% for dish in page_obj %}
+                <li class="dish-item">
+                    <div class="dish-box">
+                        <div class="dish-name">
+                            {{ dish.name }}
+                            <div class="dish-rating">
+                                <span style="font-size: 10px;">{{ dish.average_rating|default:0 }}</span>
+                                <img src="{% static 'search_app/star.webp' %}" alt="Star" class="star">
+                            </div>
+                        </div>
+                        <hr>
+                        <div id="item">
+                            <div class="dish-price">Rs. {{ dish.price }}</div>
+                            <div class="dish-restaurant">{{ dish.restaurant.name }}</div>
+                            <button id="locate" onclick="(function() { locate(parseFloat('{{ dish.lat|default_if_none:0 }}'), parseFloat('{{ dish.long|default_if_none:0 }}')) })()">
+                                <img src="{% static 'search_app/location-sign.svg' %}" alt="Locate Restaurant">
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="pagination">
+                <span class="step-links">
+                    {% if page_obj.has_previous %}
+                    <a href="?q={{ query }}&veg_only={{ veg_only }}&page=1">&laquo; first</a>
+                    <a href="?q={{ query }}&veg_only={{ veg_only }}&page={{ page_obj.previous_page_number }}">previous</a>
+                    {% else %}
+                    <a class="disabled">&laquo; first</a>
+                    <a class="disabled">previous</a>
+                    {% endif %}
+                    <span class="current">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                    </span>
+                    {% if page_obj.has_next %}
+                    <a href="?q={{ query }}&veg_only={{ veg_only }}&page={{ page_obj.next_page_number }}">next</a>
+                    <a href="?q={{ query }}&veg_only={{ veg_only }}&page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                    {% else %}
+                    <a class="disabled">next</a>
+                    <a class="disabled">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+            {% else %}
+            <p>No results found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        function submitForm() {
+            document.getElementById('searchForm').submit();
+        }
+
+        var defaultLat = 12.9716;
+        var defaultLng = 77.5946;
+        var map = L.map('map', {
+            zoomControl: false 
+        }).setView([defaultLat, defaultLng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        }).addTo(map);
+
+        function locate(lat, lng) {
+            map.setView([lat, lng], 15);
+            L.marker([lat, lng]).addTo(map);
+        }
+    </script>
+</body>
+</html>
